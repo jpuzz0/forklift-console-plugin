@@ -21,7 +21,6 @@ export const PlanCreatePage: React.FC<{ namespace: string }> = ({ namespace }) =
   // Get optional initial state context
   const { data } = useCreateVmMigrationData();
   const history = useHistory();
-  const startAtStep = data?.provider !== undefined ? 2 : 1;
   const [activeNamespace, setActiveNamespace] = useActiveNamespace();
   const defaultNamespace = process?.env?.DEFAULT_NAMESPACE || 'default';
   const projectName =
@@ -40,7 +39,7 @@ export const PlanCreatePage: React.FC<{ namespace: string }> = ({ namespace }) =
     groupVersionKind: ProviderModelGroupVersionKind,
     namespaced: true,
     isList: true,
-    namespace,
+    namespace: namespace || projectName,
   });
 
   const selectedProvider =
@@ -59,6 +58,13 @@ export const PlanCreatePage: React.FC<{ namespace: string }> = ({ namespace }) =
   });
   useSaveEffect(state, dispatch);
 
+  const isFirstStepValid =
+    state.underConstruction.plan.metadata.name &&
+    state.validation.planName !== 'error' &&
+    state.underConstruction.projectName &&
+    state.validation.projectName !== 'error' &&
+    filterState?.selectedVMs?.length > 0;
+
   const steps = [
     {
       id: 'step-1',
@@ -74,7 +80,7 @@ export const PlanCreatePage: React.FC<{ namespace: string }> = ({ namespace }) =
           selectedProvider={selectedProvider}
         />
       ),
-      enableNext: filterState?.selectedVMs?.length > 0,
+      enableNext: isFirstStepValid,
     },
     {
       id: 'step-2',
@@ -93,7 +99,7 @@ export const PlanCreatePage: React.FC<{ namespace: string }> = ({ namespace }) =
           Object.values(state?.validation || []).some((validation) => validation === 'error') ||
           state?.validation?.planName === 'default'
         ),
-      canJumpTo: filterState?.selectedVMs?.length > 0,
+      canJumpTo: isFirstStepValid,
       nextButtonText: 'Create migration plan',
     },
   ];
@@ -116,7 +122,6 @@ export const PlanCreatePage: React.FC<{ namespace: string }> = ({ namespace }) =
             dispatch(startCreate());
           }}
           onClose={() => history.goBack()}
-          startAtStep={startAtStep}
         />
       </PageSection>
     </>

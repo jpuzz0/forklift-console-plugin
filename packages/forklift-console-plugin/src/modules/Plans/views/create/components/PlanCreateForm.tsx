@@ -1,10 +1,12 @@
 import React from 'react';
+import { ProjectNameSelect, useProjectNameSelectOptions } from 'src/components/common';
 import { SelectableCard } from 'src/modules/Providers/utils/components/Gallery/SelectableCard';
 import { SelectableGallery } from 'src/modules/Providers/utils/components/Gallery/SelectableGallery';
 import { VmData } from 'src/modules/Providers/views';
 import { useCreateVmMigrationData } from 'src/modules/Providers/views/migrate';
 import {
   PageAction,
+  setPlanName,
   setProjectName as setProjectNameAction,
 } from 'src/modules/Providers/views/migrate/reducer/actions';
 import { CreateVmMigrationPageState } from 'src/modules/Providers/views/migrate/types';
@@ -19,7 +21,8 @@ import { PlanCreatePageState } from '../states';
 import { ChipsToolbarProviders } from './ChipsToolbarProviders';
 import { createProviderCardItems } from './createProviderCardItems';
 import { FiltersToolbarProviders } from './FiltersToolbarProviders';
-import { ProjectNameSelect } from './ProjectNameSelect';
+import { PlanNameTextField } from './PlanNameTextField';
+import { ProviderCardEmptyState } from './ProvidersEmptyState';
 
 export type PlanCreateFormProps = {
   providers: V1beta1Provider[];
@@ -40,35 +43,48 @@ export type PlanCreateFormProps = {
 export const PlanCreateForm: React.FC<PlanCreateFormProps> = ({
   providers,
   filterState,
+  state,
   projectName,
   filterDispatch,
   dispatch,
 }) => {
   const { t } = useForkliftTranslation();
   const { data, setData } = useCreateVmMigrationData();
-  const providerCardItems = createProviderCardItems(providers);
-  const providerNamespaces = [
-    ...new Set(providers.map((provider) => provider.metadata?.namespace)),
-  ];
+  const projectNameOptions = useProjectNameSelectOptions(projectName);
+  const providerCardItems = createProviderCardItems(
+    providers.filter((provider) => provider.metadata.namespace === projectName),
+  );
 
-  const onChange = (id: string) => {
+  const onProviderChange = React.useCallback((id: string) => {
     filterDispatch({ type: 'SELECT_PROVIDER', payload: id || '' });
-  };
+  }, []);
 
   return (
     <div className="forklift-create-provider-edit-section">
       <Form isWidthLimited className="forklift-section-secret-edit">
+        <PlanNameTextField
+          isRequired
+          value={state.underConstruction.plan.metadata.name}
+          validated={state.validation.planName}
+          isDisabled={state.flow.editingDone}
+          onChange={(_, value) => {
+            dispatch(setPlanName(value?.trim() ?? ''));
+            setData({ ...data, planName: value });
+          }}
+        />
+
         <ProjectNameSelect
           value={projectName}
-          options={providerNamespaces.map((namespace) => ({
-            value: namespace,
-            content: namespace,
-          }))}
+          options={projectNameOptions}
           onSelect={(value) => {
             dispatch(setProjectNameAction(value));
             setData({ ...data, projectName: value });
+
+            // Reset provider when target project name changes
+            if (value !== projectName) {
+              onProviderChange('');
+            }
           }}
-          isDisabled={!providers.length}
           popoverHelpContent={
             <ForkliftTrans>
               The project that your migration plan will be created in. Only projects with providers
@@ -77,47 +93,51 @@ export const PlanCreateForm: React.FC<PlanCreateFormProps> = ({
           }
         />
 
-        <FormGroupWithHelpText fieldId="type">
-          <FiltersToolbarProviders
-            className="forklift--create-plan--filters-toolbar"
-            filterState={filterState}
-            filterDispatch={filterDispatch}
-          />
-          <ChipsToolbarProviders filterState={filterState} filterDispatch={filterDispatch} />
-
-          {filterState.selectedProviderUID ? (
-            <Flex>
-              <FlexItem className="forklift--create-provider-edit-card-selected">
-                <SelectableCard
-                  title={providerCardItems[filterState.selectedProviderUID]?.title}
-                  titleLogo={providerCardItems[filterState.selectedProviderUID]?.logo}
-                  onChange={() => onChange('')}
-                  isSelected
-                  isCompact
-                  content={
-                    <Tooltip
-                      content={
-                        <div>{t('Click to select a different provider from the list.')}</div>
-                      }
-                    >
-                      <HelperText>
-                        <HelperTextItem variant="indeterminate">
-                          {t('Click to unselect.')}
-                        </HelperTextItem>
-                      </HelperText>
-                    </Tooltip>
-                  }
-                />
-              </FlexItem>
-            </Flex>
-          ) : (
-            <SelectableGallery
-              selectedID={filterState.selectedProviderUID}
-              items={providerCardItems}
-              onChange={onChange}
+        {Object.values(providerCardItems).length ? (
+          <FormGroupWithHelpText fieldId="type">
+            <FiltersToolbarProviders
+              className="forklift--create-plan--filters-toolbar"
+              filterState={filterState}
+              filterDispatch={filterDispatch}
             />
-          )}
-        </FormGroupWithHelpText>
+            <ChipsToolbarProviders filterState={filterState} filterDispatch={filterDispatch} />
+
+            {filterState.selectedProviderUID ? (
+              <Flex>
+                <FlexItem className="forklift--create-provider-edit-card-selected">
+                  <SelectableCard
+                    title={providerCardItems[filterState.selectedProviderUID]?.title}
+                    titleLogo={providerCardItems[filterState.selectedProviderUID]?.logo}
+                    onChange={() => onProviderChange('')}
+                    isSelected
+                    isCompact
+                    content={
+                      <Tooltip
+                        content={
+                          <div>{t('Click to select a different provider from the list.')}</div>
+                        }
+                      >
+                        <HelperText>
+                          <HelperTextItem variant="indeterminate">
+                            {t('Click to unselect.')}
+                          </HelperTextItem>
+                        </HelperText>
+                      </Tooltip>
+                    }
+                  />
+                </FlexItem>
+              </Flex>
+            ) : (
+              <SelectableGallery
+                selectedID={filterState.selectedProviderUID}
+                items={providerCardItems}
+                onChange={onProviderChange}
+              />
+            )}
+          </FormGroupWithHelpText>
+        ) : (
+          <ProviderCardEmptyState projectName={projectName} />
+        )}
       </Form>
     </div>
   );
