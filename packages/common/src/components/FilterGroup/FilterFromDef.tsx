@@ -17,7 +17,7 @@ interface FilterFromDefProps {
 }
 
 export const FilterFromDef = ({
-  resourceFieldId: id,
+  resourceFieldId,
   label,
   filterDef: def,
   selectedFilters,
@@ -26,26 +26,48 @@ export const FilterFromDef = ({
   showFilter = true,
   resolvedLanguage,
 }: FilterFromDefProps) => {
-  return (
-    FilterType && (
-      <FilterType
-        key={id}
-        filterId={id}
-        onFilterUpdate={(values) =>
-          onFilterUpdate({
-            ...selectedFilters,
-            [id]: values,
-          })
+  const [filterId, setFilterId] = React.useState(resourceFieldId);
+
+  const selectedFilterValues = React.useMemo(() => {
+    const groupSelectedIds = def.groups?.map((group) => group.groupId);
+
+    if (!resourceFieldId && groupSelectedIds.length) {
+      return Object.entries(selectedFilters).reduce((acc, [selectedId, selectedValues]) => {
+        if (groupSelectedIds.includes(selectedId)) {
+          acc = acc.length ? acc.concat(selectedValues) : selectedValues;
         }
-        placeholderLabel={def.placeholderLabel}
-        selectedFilters={selectedFilters[id] ?? []}
-        title={def?.fieldLabel ?? label}
-        showFilter={showFilter}
-        supportedValues={def.values}
-        supportedGroups={def.groups}
-        resolvedLanguage={resolvedLanguage}
-        helperText={def.helperText}
-      />
-    )
-  );
+
+        return acc;
+      }, []);
+    }
+
+    return selectedFilters[filterId] ?? [];
+  }, [def.groups, filterId, resourceFieldId, selectedFilters]);
+
+  const setSelectedFilters = (values: string[], selectedResourceId?: string) => {
+    if (selectedResourceId) {
+      setFilterId(selectedResourceId);
+    }
+
+    onFilterUpdate({
+      ...selectedFilters,
+      [selectedResourceId || resourceFieldId]: values,
+    });
+  };
+
+  return !def.isHidden && FilterType ? (
+    <FilterType
+      filterId={filterId}
+      onFilterUpdate={setSelectedFilters}
+      placeholderLabel={def.placeholderLabel}
+      selectedFilters={selectedFilterValues}
+      title={def?.fieldLabel ?? label}
+      showFilter={showFilter}
+      supportedValues={def.values}
+      supportedGroups={def.groups}
+      resolvedLanguage={resolvedLanguage}
+      helperText={def.helperText}
+      showFilterIcon={def.showFilterIcon}
+    />
+  ) : null;
 };

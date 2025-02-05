@@ -10,6 +10,7 @@ import {
   SelectOption,
   ToolbarFilter,
 } from '@patternfly/react-core';
+import FilterIcon from '@patternfly/react-icons/dist/esm/icons/filter-icon';
 
 import { FilterTypeProps } from './types';
 
@@ -40,6 +41,7 @@ export const GroupedEnumFilter = ({
   supportedGroups = [],
   placeholderLabel,
   showFilter = true,
+  showFilterIcon,
 }: FilterTypeProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -61,14 +63,26 @@ export const GroupedEnumFilter = ({
 
   const deleteFilter = (id: string): void =>
     onSelectedEnumIdsChange(
-      selectedEnumIds.filter((id) => id2enum[id]).filter((enumId) => enumId !== id),
+      selectedEnumIds.filter(
+        (selectedId) =>
+          id2enum[selectedId].resourceFieldId === id2enum[id].resourceFieldId && selectedId !== id,
+      ),
+      id2enum[id].resourceFieldId,
     );
 
   const hasFilter = (id: string): boolean =>
     !!id2enum[id] && !!selectedEnumIds.find((enumId) => enumId === id);
 
   const addFilter = (id: string): void => {
-    onSelectedEnumIdsChange([...selectedEnumIds.filter((id) => id2enum[id]), id]);
+    onSelectedEnumIdsChange(
+      [
+        ...selectedEnumIds.filter(
+          (selectedId) => id2enum[selectedId].resourceFieldId === id2enum[id].resourceFieldId,
+        ),
+        id,
+      ],
+      id2enum[id].resourceFieldId,
+    );
   };
 
   const onSelect = (
@@ -85,7 +99,13 @@ export const GroupedEnumFilter = ({
   };
 
   const toggle = (toggleRef: Ref<MenuToggleElement>) => (
-    <MenuToggle ref={toggleRef} onClick={onToggleClick} isExpanded={isOpen} isFullWidth>
+    <MenuToggle
+      ref={toggleRef}
+      onClick={onToggleClick}
+      isExpanded={isOpen}
+      isFullWidth
+      {...(showFilterIcon && { icon: <FilterIcon /> })}
+    >
       {placeholderLabel}
       {selectedEnumIds.length > 0 && <Badge isRead>{selectedEnumIds.length}</Badge>}
     </MenuToggle>
