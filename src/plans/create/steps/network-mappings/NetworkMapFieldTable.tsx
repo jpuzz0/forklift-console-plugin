@@ -6,8 +6,8 @@ import { MinusCircleIcon, PlusCircleIcon } from '@patternfly/react-icons';
 import { Table, Tbody, Td, Th, Thead, Tr } from '@patternfly/react-table';
 import { useForkliftTranslation } from '@utils/i18n';
 
-import type { CreatePlanFormData } from '../../constants';
 import { useCreatePlanFormContext } from '../../hooks';
+import type { CreatePlanFormData } from '../../types';
 
 import {
   defaultNetMapping,

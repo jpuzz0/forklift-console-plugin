@@ -6,6 +6,7 @@ import { isEmpty } from '@utils/helpers';
 import { useForkliftTranslation } from '@utils/i18n';
 
 import GeneralInformationStep from './steps/general-information/GeneralInformationStep';
+import MigrationTypeStep from './steps/migration-type/MigrationTypeStep';
 import NetworkMappingsStep from './steps/network-mappings/NetworkMappingsStep';
 import VirtualMachinesStep from './steps/virtual-machines/VirtualMachinesStep';
 import { firstStep, planStepNames, planStepOrder, PlanWizardStepId } from './constants';
@@ -76,9 +77,7 @@ const CreatePlanWizard: FC = () => {
               key={PlanWizardStepId.MigrationType}
               {...getStepProps(PlanWizardStepId.MigrationType)}
             >
-              <Form>
-                <Title headingLevel="h2">{t('Migration type')}</Title>
-              </Form>
+              <MigrationTypeStep />
             </WizardStep>,
           ]}
         />

@@ -40,7 +40,7 @@ const NetworkMappingsStep = () => {
   const { other: otherSourceLabels, used: usedSourceLabels } = getSourceNetworkLabels(
     sourceProvider,
     availableSourceNetworks,
-    Object.values(vms),
+    Object.values(vms ?? {}),
   );
 
   // When the network mappings are empty, default to source network values used by VMs,
