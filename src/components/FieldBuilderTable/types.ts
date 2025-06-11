@@ -7,6 +7,11 @@ export type AddButtonType = {
   isDisabled?: boolean;
 };
 
+export type RemoveButtonType = {
+  onClick: (fieldIndex: number) => void;
+  isDisabled?: boolean;
+};
+
 export type FieldRow<FormData extends FieldValues> = FieldArrayWithId<
   FormData,
   FieldArrayPath<FormData>

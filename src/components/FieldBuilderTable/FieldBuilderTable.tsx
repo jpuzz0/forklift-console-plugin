@@ -6,7 +6,7 @@ import { Button, ButtonVariant, Flex, Icon } from '@patternfly/react-core';
 import { MinusCircleIcon, PlusCircleIcon } from '@patternfly/react-icons';
 import { Table, Tbody, Td, Th, Thead, type ThProps, Tr } from '@patternfly/react-table';
 
-import type { AddButtonType, FieldRow } from './types';
+import type { AddButtonType, FieldRow, RemoveButtonType } from './types';
 
 import './FieldBuilderTable.style.scss';
 
@@ -14,14 +14,14 @@ type FieldBuilderTableProps<FormData extends FieldValues> = {
   headers: (Omit<ThProps, 'label'> & { label: ReactNode })[];
   fieldRows: FieldRow<FormData>[];
   addButton: AddButtonType;
-  onRemove: (fieldIndex: number) => void;
+  removeButton: RemoveButtonType;
 };
 
 const FieldBuilderTable: FC<FieldBuilderTableProps<FormData>> = ({
   addButton,
   fieldRows,
   headers,
-  onRemove,
+  removeButton,
 }) => (
   <Flex direction={{ default: 'column' }} spaceItems={{ default: 'spaceItemsSm' }}>
     <Table
@@ -66,8 +66,9 @@ const FieldBuilderTable: FC<FieldBuilderTableProps<FormData>> = ({
                 }
                 isInline
                 variant={ButtonVariant.plain}
+                isDisabled={removeButton.isDisabled}
                 onClick={() => {
-                  onRemove(index);
+                  removeButton.onClick(index);
                 }}
               />
             </Td>

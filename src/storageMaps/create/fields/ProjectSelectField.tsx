@@ -1,5 +1,11 @@
 import { type FC, useEffect } from 'react';
-import { Controller, type FieldPath, type FieldValues, useWatch } from 'react-hook-form';
+import {
+  Controller,
+  type FieldPath,
+  type FieldValues,
+  useFormContext,
+  useWatch,
+} from 'react-hook-form';
 
 import FormGroupWithErrorText from '@components/common/FormGroupWithErrorText';
 import { HelpIconPopover } from '@components/common/HelpIconPopover/HelpIconPopover';
@@ -9,48 +15,40 @@ import { MenuToggleStatus, Stack, StackItem } from '@patternfly/react-core';
 import { useDefaultProject } from '@utils/hooks/useDefaultProject';
 import { useForkliftTranslation } from '@utils/i18n';
 
-import { useCreatePlanFormContext } from '../../hooks/useCreatePlanFormContext';
+import type { CreateStorageMapFormData } from '../types';
 
-import { GeneralFormFieldId, generalFormFieldLabels } from './constants';
+import { CreateStorageMapFieldId, createStorageMapFieldLabels } from './constants';
 
-const PlanProjectField: FC = () => {
+const ProjectSelectField: FC = () => {
   const { t } = useForkliftTranslation();
   const {
     control,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     setValue,
-  } = useCreatePlanFormContext();
-  const [targetProject, targetProvider, sourceProvider] = useWatch({
+  } = useFormContext<CreateStorageMapFormData>();
+  const [targetProvider, sourceProvider] = useWatch({
     control,
-    name: [
-      GeneralFormFieldId.TargetProject,
-      GeneralFormFieldId.TargetProvider,
-      GeneralFormFieldId.SourceProvider,
-    ],
+    name: [CreateStorageMapFieldId.TargetProvider, CreateStorageMapFieldId.SourceProvider],
   });
   const [projectOptions] = useProjectNameSelectOptions();
   const defaultProject = useDefaultProject(projectOptions);
 
-  // Automatically set the default plan project once it's resolved
+  // Automatically set the default project once it's resolved
   useEffect(() => {
     if (defaultProject) {
-      setValue(GeneralFormFieldId.PlanProject, defaultProject);
+      setValue(CreateStorageMapFieldId.Project, defaultProject);
     }
   }, [defaultProject, setValue]);
 
   return (
     <FormGroupWithErrorText
       isRequired
-      fieldId={GeneralFormFieldId.PlanProject}
-      label={generalFormFieldLabels[GeneralFormFieldId.PlanProject]}
+      fieldId={CreateStorageMapFieldId.Project}
+      label={createStorageMapFieldLabels[CreateStorageMapFieldId.Project]}
       labelIcon={
         <HelpIconPopover>
           <Stack hasGutter>
-            <StackItem>
-              {t(
-                'The project that your migration plan will be created in. Only projects with providers in them can be selected.',
-              )}
-            </StackItem>
+            <StackItem>{t('The project that your storage map will be created in.')}</StackItem>
             <StackItem>
               {t('Projects, also known as namespaces, separate resources within clusters.')}
             </StackItem>
@@ -59,46 +57,44 @@ const PlanProjectField: FC = () => {
       }
     >
       <Controller
-        name={GeneralFormFieldId.PlanProject}
+        name={CreateStorageMapFieldId.Project}
         control={control}
         render={({ field }) => (
           <div ref={field.ref}>
             <TypeaheadSelect
               isScrollable
-              placeholder={t('Select plan project')}
-              id={GeneralFormFieldId.PlanProject}
+              isDisabled={isSubmitting}
+              placeholder={t('Select project')}
+              id={CreateStorageMapFieldId.Project}
               selectOptions={projectOptions}
               selected={field.value}
               onSelect={(_, value) => {
                 field.onChange(value);
 
                 if (sourceProvider) {
-                  setValue<FieldPath<FieldValues>>(GeneralFormFieldId.SourceProvider, '', {
+                  setValue<FieldPath<FieldValues>>(CreateStorageMapFieldId.SourceProvider, '', {
                     shouldValidate: true,
                   });
                 }
                 if (targetProvider) {
-                  setValue<FieldPath<FieldValues>>(GeneralFormFieldId.TargetProvider, '', {
+                  setValue<FieldPath<FieldValues>>(CreateStorageMapFieldId.TargetProvider, '', {
                     shouldValidate: true,
                   });
-                }
-                if (targetProject) {
-                  setValue(GeneralFormFieldId.TargetProject, '', { shouldValidate: true });
                 }
               }}
               onClearSelection={() => {
                 field.onChange('');
               }}
               toggleProps={{
-                status: errors[GeneralFormFieldId.PlanProject] && MenuToggleStatus.danger,
+                status: errors[CreateStorageMapFieldId.Project] && MenuToggleStatus.danger,
               }}
             />
           </div>
         )}
-        rules={{ required: t('Plan project is required.') }}
+        rules={{ required: t('Project is required.') }}
       />
     </FormGroupWithErrorText>
   );
 };
 
-export default PlanProjectField;
+export default ProjectSelectField;

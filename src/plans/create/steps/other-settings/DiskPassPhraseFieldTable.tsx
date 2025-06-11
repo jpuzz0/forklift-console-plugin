@@ -80,13 +80,15 @@ const DiskPassPhraseFieldTable = () => {
           append(defaultDiskPassPhrase);
         },
       }}
-      onRemove={(index) => {
-        if (diskPassPhrases.length > 1) {
-          remove(index);
-          return;
-        }
+      removeButton={{
+        onClick: (index) => {
+          if (diskPassPhrases.length > 1) {
+            remove(index);
+            return;
+          }
 
-        setValue(getDiskPassPhraseFieldId(index), '');
+          setValue(getDiskPassPhraseFieldId(index), '');
+        },
       }}
     />
   );
