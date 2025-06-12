@@ -55,7 +55,7 @@ const StorageMapsAddButton: FC<{ namespace: string; dataTestId?: string }> = ({
         <DropdownItem
           key="form"
           onClick={() => {
-            history.push(`/k8s/ns/${namespace}/storageMaps/create/form`);
+            history.push(`/k8s/storageMaps/create/form`);
           }}
         >
           {t('Create with form')}

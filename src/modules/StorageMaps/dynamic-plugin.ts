@@ -56,7 +56,7 @@ export const extensions: EncodedExtension[] = [
     properties: {
       component: { $codeRef: 'StorageMapCreatePage' },
       exact: true,
-      path: `/k8s/ns/:ns/storageMaps/create/form`,
+      path: `/k8s/storageMaps/create/form`,
     },
     type: 'console.page/route',
   },

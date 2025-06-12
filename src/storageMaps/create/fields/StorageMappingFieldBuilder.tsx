@@ -1,12 +1,14 @@
 import type { FC } from 'react';
 import { type FieldPath, useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { useSourceStorages } from 'src/modules/Providers/hooks/useStorages';
+import { PROVIDER_TYPES } from 'src/providers/utils/constants';
 
 import FieldBuilderTable from '@components/FieldBuilderTable/FieldBuilderTable';
 import { isEmpty } from '@utils/helpers';
 import useTargetStorages from '@utils/hooks/useTargetStorages';
 import { useForkliftTranslation } from '@utils/i18n';
 
+import OffloadStorageIndexedForm from '../OffloadStorageIndexedForm';
 import type { CreateStorageMapFormData } from '../types';
 
 import {
@@ -62,6 +64,9 @@ const StorageMappingFieldBuilder: FC = () => {
       ]}
       fieldRows={storageMappingFields.map((field, index) => ({
         ...field,
+        ...(sourceProvider?.spec?.type === PROVIDER_TYPES.vsphere && {
+          additionalOptions: <OffloadStorageIndexedForm index={index} />,
+        }),
         inputs: [
           <SourceStorageField
             fieldId={getCreateStorageMapFieldId(CreateStorageMapFieldId.SourceStorage, index)}
@@ -82,13 +87,7 @@ const StorageMappingFieldBuilder: FC = () => {
           Boolean(loadError),
         label: t('Add mapping'),
         onClick: () => {
-          append({
-            [CreateStorageMapFieldId.SourceStorage]:
-              defaultStorageMapping[CreateStorageMapFieldId.SourceStorage],
-            [CreateStorageMapFieldId.TargetStorage]: {
-              name: defaultStorageMapping[CreateStorageMapFieldId.TargetStorage].name,
-            },
-          });
+          append(defaultStorageMapping);
         },
       }}
       removeButton={{

@@ -18,4 +18,5 @@ export type FieldRow<FormData extends FieldValues> = FieldArrayWithId<
 > & {
   id: string;
   inputs: ReactElement[];
+  additionalOptions?: ReactNode;
 };

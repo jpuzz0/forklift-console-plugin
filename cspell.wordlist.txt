@@ -87,3 +87,7 @@ pvc
 pvcs
 LUKS
 distlib
+Vantara
+XCOPY
+ONTAP
+Primera
