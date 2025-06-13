@@ -1,6 +1,7 @@
 import type { FC } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 
+import { HelpIconPopover } from '@components/common/HelpIconPopover/HelpIconPopover';
 import MtvSelect from '@components/common/MtvSelect';
 import { FormGroup } from '@patternfly/react-core';
 import { useForkliftTranslation } from '@utils/i18n';
@@ -32,6 +33,13 @@ const StorageProductField: FC<StorageProductFieldProps> = ({ fieldId }) => {
     <FormGroup
       fieldId={fieldId}
       label={createStorageMapFieldLabels[CreateStorageMapFieldId.StorageProduct]}
+      labelIcon={
+        <HelpIconPopover>
+          {t(
+            'The commercial product name or model of the storage system being used. This helps ensure the correct features and APIs will be used.',
+          )}
+        </HelpIconPopover>
+      }
     >
       <Controller
         name={fieldId}

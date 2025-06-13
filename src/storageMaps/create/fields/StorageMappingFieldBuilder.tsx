@@ -1,5 +1,5 @@
 import type { FC } from 'react';
-import { type FieldPath, useFieldArray, useFormContext, useWatch } from 'react-hook-form';
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { useSourceStorages } from 'src/modules/Providers/hooks/useStorages';
 import { PROVIDER_TYPES } from 'src/providers/utils/constants';
 
@@ -98,19 +98,7 @@ const StorageMappingFieldBuilder: FC = () => {
             return;
           }
 
-          setValue<FieldPath<CreateStorageMapFormData>>(
-            getCreateStorageMapFieldId(CreateStorageMapFieldId.SourceStorage, index),
-            defaultStorageMapping[CreateStorageMapFieldId.SourceStorage],
-            { shouldValidate: true },
-          );
-
-          setValue<FieldPath<CreateStorageMapFormData>>(
-            getCreateStorageMapFieldId(CreateStorageMapFieldId.TargetStorage, index),
-            {
-              name: defaultStorageMapping[CreateStorageMapFieldId.TargetStorage].name,
-            },
-            { shouldValidate: true },
-          );
+          setValue(CreateStorageMapFieldId.StorageMap, [defaultStorageMapping]);
         },
       }}
     />

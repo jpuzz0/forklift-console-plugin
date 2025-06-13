@@ -18,9 +18,9 @@ export enum CreateStorageMapFieldId {
 export type StorageMapping = {
   [CreateStorageMapFieldId.SourceStorage]: MappingValue;
   [CreateStorageMapFieldId.TargetStorage]: MappingValue;
-  [CreateStorageMapFieldId.OffloadPlugin]: string;
-  [CreateStorageMapFieldId.StorageSecret]: string;
-  [CreateStorageMapFieldId.StorageProduct]: string;
+  [CreateStorageMapFieldId.OffloadPlugin]?: string;
+  [CreateStorageMapFieldId.StorageSecret]?: string;
+  [CreateStorageMapFieldId.StorageProduct]?: string;
 };
 
 export const defaultStorageMapping: StorageMapping = {
@@ -50,7 +50,7 @@ export enum OffloadPlugin {
 }
 
 // Reference: https://github.com/kubev2v/forklift/blob/29b60e21c388420e6e0e79a55802c2c0a201ab45/pkg/apis/forklift/v1beta1/mapping.go
-export enum StorageVendorProduct {
+enum StorageVendorProduct {
   Vantara = 'vantara',
   Ontap = 'ontap',
   Primera3Par = 'primera3par',

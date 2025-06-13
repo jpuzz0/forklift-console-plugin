@@ -10,7 +10,7 @@ import {
 } from '@patternfly/react-core';
 import { useForkliftTranslation } from '@utils/i18n';
 
-export type MtvSelectOption = {
+type MtvSelectOption = {
   value: string;
   label: string;
   disabled?: boolean;

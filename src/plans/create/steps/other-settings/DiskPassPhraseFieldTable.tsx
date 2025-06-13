@@ -87,7 +87,7 @@ const DiskPassPhraseFieldTable = () => {
             return;
           }
 
-          setValue(getDiskPassPhraseFieldId(index), '');
+          setValue(OtherSettingsFormFieldId.DiskDecryptionPassPhrases, [defaultDiskPassPhrase]);
         },
       }}
     />

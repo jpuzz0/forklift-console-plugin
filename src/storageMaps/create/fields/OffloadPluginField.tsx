@@ -1,8 +1,9 @@
 import type { FC } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 
+import { HelpIconPopover } from '@components/common/HelpIconPopover/HelpIconPopover';
 import MtvSelect from '@components/common/MtvSelect';
-import { FormGroup } from '@patternfly/react-core';
+import { FormGroup, Stack, StackItem } from '@patternfly/react-core';
 import { useForkliftTranslation } from '@utils/i18n';
 
 import type { CreateStorageMapFormData } from '../types';
@@ -32,6 +33,22 @@ const OffloadPluginField: FC<OffloadPluginFieldProps> = ({ fieldId }) => {
     <FormGroup
       fieldId={fieldId}
       label={createStorageMapFieldLabels[CreateStorageMapFieldId.OffloadPlugin]}
+      labelIcon={
+        <HelpIconPopover>
+          <Stack hasGutter>
+            <StackItem>
+              {t(
+                'Enables hardware-assisted copying by instructing the vSphere ESXi host to transfer data directly on the storage backend using technologies like XCOPY and VAAI.',
+              )}
+            </StackItem>
+            <StackItem>
+              {t(
+                'This significantly speeds up the migration process and frees up network and host resources by avoiding the need to pull data through the source host.',
+              )}
+            </StackItem>
+          </Stack>
+        </HelpIconPopover>
+      }
     >
       <Controller
         name={fieldId}

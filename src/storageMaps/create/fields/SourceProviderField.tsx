@@ -8,7 +8,11 @@ import { useForkliftTranslation } from '@utils/i18n';
 
 import type { CreateStorageMapFormData } from '../types';
 
-import { CreateStorageMapFieldId, createStorageMapFieldLabels } from './constants';
+import {
+  CreateStorageMapFieldId,
+  createStorageMapFieldLabels,
+  defaultStorageMapping,
+} from './constants';
 
 const SourceProviderField: FC = () => {
   const { t } = useForkliftTranslation();
@@ -16,7 +20,7 @@ const SourceProviderField: FC = () => {
     control,
     formState: { isSubmitting },
     getFieldState,
-    unregister,
+    setValue,
   } = useFormContext<CreateStorageMapFormData>();
   const { error } = getFieldState(CreateStorageMapFieldId.SourceProvider);
   const project = useWatch({ control, name: CreateStorageMapFieldId.Project });
@@ -39,7 +43,7 @@ const SourceProviderField: FC = () => {
             value={field.value?.metadata?.name ?? ''}
             onSelect={(_, value) => {
               field.onChange(value);
-              unregister([CreateStorageMapFieldId.StorageMap]);
+              setValue(CreateStorageMapFieldId.StorageMap, [defaultStorageMapping]);
             }}
             status={error && MenuToggleStatus.danger}
           />

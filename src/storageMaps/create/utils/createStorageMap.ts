@@ -1,15 +1,11 @@
 import { getObjectRef } from 'src/modules/Providers/views/migrate/reducer/helpers';
-import { PROVIDER_TYPES } from 'src/providers/utils/constants';
 
-import {
-  StorageMapModel,
-  type V1beta1Provider,
-  type V1beta1StorageMap,
-  type V1beta1StorageMapSpecMap,
-} from '@kubev2v/types';
+import { StorageMapModel, type V1beta1Provider, type V1beta1StorageMap } from '@kubev2v/types';
 import { k8sCreate } from '@openshift-console/dynamic-plugin-sdk';
 
 import type { StorageMapping } from '../fields/constants';
+
+import { buildStorageMappings } from './buildStorageMappings';
 
 type CreateStorageMapParams = {
   mappings: StorageMapping[];
@@ -20,8 +16,16 @@ type CreateStorageMapParams = {
 };
 
 /**
- * Creates a storage map resource
- * Maps source storage to destination storage classes based on provider type
+ * Creates a storage map resource for migration between providers
+ *
+ * This function creates a Kubernetes StorageMap resource that defines how source storage
+ * should be mapped to destination storage classes during migration. It supports:
+ * - Different provider types (OpenShift, vSphere, etc.)
+ * - Special storage configurations (Glance storage)
+ * - Optional copy offload plugins for performance optimization
+ *
+ * @param params - Configuration parameters for creating the storage map
+ * @returns Promise that resolves to the created storage map resource
  */
 export const createStorageMap = async ({
   mappings,
@@ -41,40 +45,7 @@ export const createStorageMap = async ({
       namespace: project,
     },
     spec: {
-      map: mappings?.reduce((acc: V1beta1StorageMapSpecMap[], { sourceStorage, targetStorage }) => {
-        if (sourceStorage.name && targetStorage.name) {
-          if (sourceProvider?.spec?.type === PROVIDER_TYPES.openshift) {
-            // Special handling for OpenShift source providers
-            acc.push({
-              destination: { storageClass: targetStorage.name },
-              source: {
-                id: sourceStorage.id,
-                name: targetStorage.name.replace(/^\//gu, ''),
-              },
-            });
-          }
-
-          // Special handling for Glance storage
-          if (sourceStorage.name === 'glance') {
-            acc.push({
-              destination: { storageClass: targetStorage.name },
-              source: {
-                name: 'glance',
-              },
-            });
-          }
-
-          // Default storage mapping
-          acc.push({
-            destination: { storageClass: targetStorage.name },
-            source: {
-              id: sourceStorage.id,
-            },
-          });
-        }
-
-        return acc;
-      }, []),
+      map: buildStorageMappings(mappings, sourceProvider),
       provider: {
         destination: getObjectRef(targetProvider),
         source: getObjectRef(sourceProvider),
