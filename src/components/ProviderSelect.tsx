@@ -1,5 +1,6 @@
 import { type ComponentProps, type FC, type ReactNode, useMemo } from 'react';
 import { getResourceUrl } from 'src/modules/Providers/utils/helpers/getResourceUrl';
+import { PROVIDER_TYPES } from 'src/providers/utils/constants';
 
 import { ExternalLink } from '@components/common/ExternalLink/ExternalLink';
 import Select from '@components/common/MtvSelect';
@@ -14,9 +15,10 @@ import { isEmpty } from '@utils/helpers';
 import { ForkliftTrans } from '@utils/i18n';
 import { ProviderStatus } from '@utils/types';
 
-import { ProviderType } from '../create/types';
-
-type ProviderSelectProps = Pick<ComponentProps<typeof Select>, 'onSelect' | 'status'> & {
+type ProviderSelectProps = Pick<
+  ComponentProps<typeof Select>,
+  'onSelect' | 'status' | 'isDisabled'
+> & {
   id: string;
   value: string;
   namespace: string | undefined;
@@ -28,6 +30,7 @@ type ProviderSelectProps = Pick<ComponentProps<typeof Select>, 'onSelect' | 'sta
 const ProviderSelect: FC<ProviderSelectProps> = ({
   emptyState,
   id,
+  isDisabled,
   isTarget,
   namespace,
   onSelect,
@@ -47,7 +50,7 @@ const ProviderSelect: FC<ProviderSelectProps> = ({
         const isReady = provider.status?.phase === ProviderStatus.Ready;
 
         if (isTarget) {
-          return isReady && provider.spec?.type === ProviderType.Openshift;
+          return isReady && provider.spec?.type === PROVIDER_TYPES.openshift;
         }
 
         return isReady;
@@ -65,7 +68,14 @@ const ProviderSelect: FC<ProviderSelectProps> = ({
   );
 
   return (
-    <Select id={id} value={value} status={status} onSelect={onSelect} placeholder={placeholder}>
+    <Select
+      id={id}
+      value={value}
+      status={status}
+      onSelect={onSelect}
+      placeholder={placeholder}
+      isDisabled={isDisabled}
+    >
       {isEmpty(filteredProviders)
         ? (emptyState ?? (
             <EmptyState variant={EmptyStateVariant.xs}>
