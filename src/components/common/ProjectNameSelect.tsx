@@ -11,7 +11,8 @@ import { isEmpty } from '@utils/helpers';
 import { useForkliftTranslation } from '@utils/i18n';
 
 import { FormGroupWithHelpText } from './FormGroupWithHelpText/FormGroupWithHelpText';
-import { TypeaheadSelect, type TypeaheadSelectOption } from './TypeaheadSelect/TypeaheadSelect';
+import TypeaheadSelect from './TypeaheadSelect/TypeaheadSelect';
+import type { TypeaheadSelectOption } from './TypeaheadSelect/types';
 
 type ProjectNameSelectProps = {
   value: string | undefined;
@@ -45,14 +46,12 @@ export const ProjectNameSelect: FC<ProjectNameSelectProps> = ({
     >
       <TypeaheadSelect
         isScrollable
+        allowClear
         id="project-name-select"
-        selectOptions={options}
-        selected={value}
-        onSelect={(_, value) => {
-          onSelect(String(value));
-        }}
-        onClearSelection={() => {
-          onSelect('');
+        options={options}
+        value={value}
+        onChange={(newValue) => {
+          onSelect(newValue as string);
         }}
         isDisabled={isDisabled}
       />

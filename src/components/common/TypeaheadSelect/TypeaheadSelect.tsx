@@ -1,438 +1,206 @@
-import {
-  type FC,
-  type FormEvent,
-  type KeyboardEvent,
-  type MouseEvent,
-  type Ref,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { type FC, useMemo, useRef, useState } from 'react';
 
 import {
-  Button,
-  KeyTypes,
-  MenuToggle,
   type MenuToggleElement,
   type MenuToggleProps,
   Select,
   SelectList,
   SelectOption,
-  type SelectOptionProps,
   type SelectProps,
-  TextInputGroup,
-  TextInputGroupMain,
-  TextInputGroupUtilities,
 } from '@patternfly/react-core';
-import { TimesIcon } from '@patternfly/react-icons';
-import { t, useForkliftTranslation } from '@utils/i18n';
 
-export type TypeaheadSelectOption = {
-  /** Content of the select option. */
-  content: string | number;
-  /** Value of the select option. */
-  value: string | number;
-  /** Indicator for option being selected */
-  isSelected?: boolean;
-} & Omit<SelectOptionProps, 'content' | 'isSelected'>;
+import { DEFAULT_NO_OPTIONS, DEFAULT_PLACEHOLDER, PLACEHOLDER_VALUES } from './constants';
+import TypeaheadMenuToggle from './TypeaheadMenuToggle';
+import type { TypeaheadSelectOption } from './types';
+import {
+  defaultFilterFunction,
+  generateFilteredOptions,
+  getDefaultCreateMessage,
+  getDefaultNoResults,
+  isPlaceholderValue,
+} from './utils';
 
 type TypeaheadSelectProps = {
-  /** Options of the select */
-  selectOptions: TypeaheadSelectOption[];
-  /** Callback triggered on selection. */
-  onSelect?: (
-    _event: MouseEvent | KeyboardEvent<HTMLInputElement> | undefined,
-    selection: string | number,
-  ) => void;
-  /** Callback triggered when the select opens or closes. */
-  onToggle?: (nextIsOpen: boolean) => void;
-  /** Callback triggered when the text in the input field changes. */
-  onInputChange?: (newValue: string) => void;
-  /** Function to return items matching the current filter value */
+  /** Available options */
+  options: TypeaheadSelectOption[];
+  /** Current selected value (for controlled component) */
+  value?: string | number;
+  /** Selection change handler */
+  onChange?: (value: string | number | undefined) => void;
+  /** Input text change handler */
+  onInputChange?: (inputValue: string) => void;
+  /** Custom filter function */
   filterFunction?: (
     filterValue: string,
     options: TypeaheadSelectOption[],
   ) => TypeaheadSelectOption[];
-  /** Callback triggered when the clear button is selected */
-  onClearSelection?: () => void;
-  /** Flag to allow clear current selection */
+  /** Allow clearing selection */
   allowClear?: boolean;
-  /** Placeholder text for the select input. */
+  /** Input placeholder text */
   placeholder?: string;
-  /** Flag to indicate if the typeahead select allows new items */
+  /** Allow creating new options */
   isCreatable?: boolean;
-  /** Flag to indicate if create option should be at top of typeahead */
-  isCreateOptionOnTop?: boolean;
-  /** Message to display to create a new option */
-  createOptionMessage?: string | ((newValue: string) => string);
-  /** Message to display when no options are available. */
-  noOptionsAvailableMessage?: string;
-  /** Message to display when no options match the filter. */
-  noOptionsFoundMessage?: string | ((filter: string) => string);
-  /** Flag indicating the select should be disabled. */
+  /** Message for creating new option */
+  createOptionMessage?: string | ((value: string) => string);
+  /** No options available message */
+  noOptionsMessage?: string;
+  /** No filtered results message */
+  noResultsMessage?: string | ((filter: string) => string);
+  /** Disable the component */
   isDisabled?: boolean;
-  /** Width of the toggle. */
+  /** Toggle width */
   toggleWidth?: string;
-  /** Additional props passed to the toggle. */
-  toggleProps?: MenuToggleProps;
-} & Omit<SelectProps, 'toggle' | 'onSelect'>;
+  /** Additional toggle props */
+  toggleProps?: Omit<MenuToggleProps, 'ref' | 'onClick' | 'isExpanded'>;
+} & Omit<SelectProps, 'toggle' | 'onSelect' | 'selected'>;
 
-const defaultNoOptionsFoundMessage = (filter: string) => `No results found for "${filter}"`;
-const defaultCreateOptionMessage = (newValue: string) => `Create "${newValue}"`;
-const defaultFilterFunction = (filterValue: string, options: TypeaheadSelectOption[]) =>
-  options.filter((option) =>
-    String(option.content).toLowerCase().includes(filterValue.toLowerCase()),
-  );
-
-export const TypeaheadSelect: FC<TypeaheadSelectProps> = ({
-  allowClear,
-  children,
-  createOptionMessage = defaultCreateOptionMessage,
+const TypeaheadSelect: FC<TypeaheadSelectProps> = ({
+  allowClear = false,
+  createOptionMessage = getDefaultCreateMessage,
   filterFunction = defaultFilterFunction,
-  innerRef,
   isCreatable = false,
-  isCreateOptionOnTop = false,
-  isDisabled,
-  noOptionsAvailableMessage = t('No options are available'),
-  noOptionsFoundMessage = defaultNoOptionsFoundMessage,
-  onClearSelection,
+  isDisabled = false,
+  noOptionsMessage = DEFAULT_NO_OPTIONS,
+  noResultsMessage = getDefaultNoResults,
+  onChange,
   onInputChange,
-  onSelect,
-  onToggle,
-  placeholder = t('Select an option'),
-  selectOptions,
+  options = [],
+  placeholder = DEFAULT_PLACEHOLDER,
   toggleProps,
   toggleWidth,
-  ...props
-}: TypeaheadSelectProps) => {
-  const { t } = useForkliftTranslation();
+  value,
+  ...selectProps
+}) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [filterValue, setFilterValue] = useState<string>('');
-  const [isFiltering, setIsFiltering] = useState<boolean>(false);
-  const [focusedItemIndex, setFocusedItemIndex] = useState<number | null>(null);
-  const [activeItemId, setActiveItemId] = useState<string | null>(null);
-  const textInputRef = useRef<HTMLInputElement>();
+  const [isFiltering, setIsFiltering] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const NO_RESULTS = t('No results');
-
-  const selected = useMemo(
-    () => selectOptions.find((option) => option.value === props.selected || option.isSelected),
-    [props.selected, selectOptions],
+  // Find selected option based on value prop
+  const selectedOption = useMemo(
+    () => options.find((option) => option.value === value),
+    [options, value],
   );
 
-  const filteredSelections = useMemo(() => {
-    let newSelectOptions: TypeaheadSelectOption[] = selectOptions;
+  const filteredOptions = useMemo(
+    () =>
+      generateFilteredOptions({
+        createOptionMessage,
+        filterFunction,
+        inputValue,
+        isCreatable,
+        isFiltering,
+        noResultsMessage,
+        options,
+      }),
+    [
+      isFiltering,
+      inputValue,
+      options,
+      filterFunction,
+      isCreatable,
+      createOptionMessage,
+      noResultsMessage,
+    ],
+  );
 
-    // Filter menu items based on the text input value when one exists
-    if (isFiltering && filterValue) {
-      newSelectOptions = filterFunction(filterValue, selectOptions);
-
-      if (
-        isCreatable &&
-        filterValue.trim() &&
-        !newSelectOptions.find(
-          (option) => String(option.content).toLowerCase() === filterValue.toLowerCase(),
-        )
-      ) {
-        const createOption = {
-          content:
-            typeof createOptionMessage === 'string'
-              ? createOptionMessage
-              : createOptionMessage(filterValue),
-          value: filterValue,
-        };
-        newSelectOptions = isCreateOptionOnTop
-          ? [createOption, ...newSelectOptions]
-          : [...newSelectOptions, createOption];
-      }
-
-      // When no options are found after filtering, display 'No results found'
-      if (!newSelectOptions.length) {
-        newSelectOptions = [
-          {
-            content:
-              typeof noOptionsFoundMessage === 'string'
-                ? noOptionsFoundMessage
-                : noOptionsFoundMessage(filterValue),
-            isAriaDisabled: true,
-            value: NO_RESULTS,
-          },
-        ];
-      }
-    }
-
-    // When no options are  available,  display 'No options available'
-    if (!newSelectOptions.length) {
-      newSelectOptions = [
+  // Display options (filtered when searching, all when not, or no options message)
+  const displayOptions = useMemo(() => {
+    if (options.length === 0) {
+      return [
         {
-          content: noOptionsAvailableMessage,
-          isAriaDisabled: true,
-          value: NO_RESULTS,
+          content: noOptionsMessage,
+          optionProps: { isDisabled: true },
+          value: PLACEHOLDER_VALUES.NO_OPTIONS,
         },
       ];
     }
+    return filteredOptions;
+  }, [options.length, filteredOptions, noOptionsMessage]);
 
-    return newSelectOptions;
-  }, [
-    isFiltering,
-    filterValue,
-    filterFunction,
-    selectOptions,
-    noOptionsFoundMessage,
-    isCreatable,
-    isCreateOptionOnTop,
-    createOptionMessage,
-    noOptionsAvailableMessage,
-  ]);
+  const handleToggleClick = (): void => {
+    const newIsOpen = !isOpen;
+    setIsOpen(newIsOpen);
 
-  useEffect(() => {
-    if (isFiltering) {
-      openMenu();
-    }
-    // Don't update on openMenu changes
-  }, [isFiltering]);
-
-  const setActiveAndFocusedItem = (itemIndex: number) => {
-    setFocusedItemIndex(itemIndex);
-    const focusedItem = selectOptions[itemIndex];
-    setActiveItemId(String(focusedItem.value));
-  };
-
-  const resetActiveAndFocusedItem = () => {
-    setFocusedItemIndex(null);
-    setActiveItemId(null);
-  };
-
-  const openMenu = () => {
-    if (!isOpen) {
-      if (onToggle) {
-        onToggle(true);
-      }
-      setIsOpen(true);
+    if (!newIsOpen) {
+      // Reset filtering when closing
+      setIsFiltering(false);
+      setInputValue(selectedOption?.content?.toString() ?? '');
     }
   };
 
-  const closeMenu = () => {
-    if (onToggle) {
-      onToggle(false);
-    }
-    setIsOpen(false);
-    resetActiveAndFocusedItem();
-    setIsFiltering(false);
-    setFilterValue(String(selected?.content ?? ''));
+  const handleInputValueChange = (newInputValue: string, newIsFiltering: boolean): void => {
+    setInputValue(newInputValue);
+    setIsFiltering(newIsFiltering);
   };
 
-  const onInputClick = () => {
-    if (!isOpen) {
-      openMenu();
-    }
-    setTimeout(() => {
-      textInputRef.current?.focus();
-    }, 100);
+  const handleSelectionClear = (): void => {
+    onChange?.(undefined);
   };
 
-  const selectOption = (
-    _event: MouseEvent | KeyboardEvent<HTMLInputElement> | undefined,
-    option: TypeaheadSelectOption,
-  ) => {
-    if (onSelect) {
-      onSelect(_event, option.value);
-    }
-    closeMenu();
-  };
-
-  const handleSelect = (_event: MouseEvent | undefined, value: string | number | undefined) => {
-    if (value && value !== NO_RESULTS) {
-      const optionToSelect = selectOptions.find((option) => option.value === value);
-      if (optionToSelect) {
-        selectOption(_event, optionToSelect);
-      } else if (isCreatable) {
-        selectOption(_event, { content: value, value });
-      }
-    }
-  };
-
-  const onTextInputChange = (_event: FormEvent<HTMLInputElement>, value: string) => {
-    setFilterValue(value || '');
-    setIsFiltering(true);
-    if (onInputChange) {
-      onInputChange(value);
-    }
-
-    resetActiveAndFocusedItem();
-  };
-
-  const handleMenuArrowKeys = (key: string) => {
-    let indexToFocus = 0;
-
-    openMenu();
-
-    if (filteredSelections.every((option) => option.isDisabled)) {
+  const handleSelect = (selectedValue: string | number | undefined): void => {
+    // Ignore placeholder values
+    if (isPlaceholderValue(selectedValue)) {
       return;
     }
 
-    if (key === KeyTypes.ArrowUp) {
-      // When no index is set or at the first index, focus to the last, otherwise decrement focus index
-      if (focusedItemIndex === null || focusedItemIndex === 0) {
-        indexToFocus = filteredSelections.length - 1;
-      } else {
-        indexToFocus = focusedItemIndex - 1;
-      }
+    // Check if this is a create action (value not in original options)
+    const existingOption = options.find((option) => option.value === selectedValue);
 
-      // Skip disabled options
-      while (filteredSelections[indexToFocus].isDisabled) {
-        indexToFocus -= 1;
-        if (indexToFocus === -1) {
-          indexToFocus = filteredSelections.length - 1;
-        }
-      }
-    }
+    if (existingOption || isCreatable) {
+      onChange?.(selectedValue);
+      setIsOpen(false);
 
-    if (key === KeyTypes.ArrowDown) {
-      // When no index is set or at the last index, focus to the first, otherwise increment focus index
-      if (focusedItemIndex === null || focusedItemIndex === filteredSelections.length - 1) {
-        indexToFocus = 0;
-      } else {
-        indexToFocus = focusedItemIndex + 1;
-      }
-
-      // Skip disabled options
-      while (filteredSelections[indexToFocus].isDisabled) {
-        indexToFocus += 1;
-        if (indexToFocus === filteredSelections.length) {
-          indexToFocus = 0;
-        }
-      }
-    }
-
-    setActiveAndFocusedItem(indexToFocus);
-  };
-
-  const onInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    const focusedItem = focusedItemIndex !== null ? filteredSelections[focusedItemIndex] : null;
-
-    switch (event.key) {
-      case KeyTypes.Enter:
-        if (
-          isOpen &&
-          focusedItem &&
-          focusedItem.value !== NO_RESULTS &&
-          !focusedItem.isAriaDisabled
-        ) {
-          selectOption(event, focusedItem);
-        }
-
-        openMenu();
-
-        break;
-      case KeyTypes.ArrowUp:
-      case KeyTypes.ArrowDown:
-        event.preventDefault();
-        handleMenuArrowKeys(event.key);
-        break;
-      default:
-        break;
-    }
-  };
-
-  const onToggleClick = () => {
-    if (!isOpen) {
-      openMenu();
-    } else {
-      closeMenu();
-    }
-    textInputRef.current?.focus();
-  };
-
-  const onClearButtonClick = () => {
-    if (isFiltering && filterValue) {
-      if (selected && onSelect) {
-        onSelect(undefined, selected.value);
-      }
-      setFilterValue('');
-      if (onInputChange) {
-        onInputChange('');
-      }
+      // Reset filtering state and update input value to show selected option
       setIsFiltering(false);
-    }
-
-    resetActiveAndFocusedItem();
-    textInputRef.current?.focus();
-
-    if (onClearSelection) {
-      onClearSelection();
+      setInputValue(existingOption?.content?.toString() ?? selectedValue?.toString() ?? '');
     }
   };
 
-  const toggle = (toggleRef: Ref<MenuToggleElement>) => (
-    <MenuToggle
-      ref={toggleRef}
-      variant="typeahead"
-      aria-label="Typeahead menu toggle"
-      onClick={onToggleClick}
-      isExpanded={isOpen}
+  const toggle = (toggleRef: React.Ref<MenuToggleElement>): React.ReactElement => (
+    <TypeaheadMenuToggle
+      toggleRef={toggleRef}
+      inputRef={inputRef}
+      placeholder={placeholder}
       isDisabled={isDisabled}
-      isFullWidth
-      style={{ width: toggleWidth }}
-      {...toggleProps}
-    >
-      <TextInputGroup isPlain>
-        <TextInputGroupMain
-          value={isFiltering ? filterValue : (selected?.content ?? '')}
-          onClick={onInputClick}
-          onChange={onTextInputChange}
-          onKeyDown={onInputKeyDown}
-          autoComplete="off"
-          innerRef={textInputRef}
-          placeholder={placeholder}
-          {...(activeItemId && { 'aria-activedescendant': activeItemId })}
-          role="combobox"
-          isExpanded={isOpen}
-          aria-controls="select-typeahead-listbox"
-        />
-        {(isFiltering && filterValue) || (allowClear && selected) ? (
-          <TextInputGroupUtilities>
-            <Button
-              icon={<TimesIcon aria-hidden />}
-              variant="plain"
-              onClick={onClearButtonClick}
-              aria-label="Clear input value"
-            />
-          </TextInputGroupUtilities>
-        ) : null}
-      </TextInputGroup>
-    </MenuToggle>
+      isOpen={isOpen}
+      toggleWidth={toggleWidth}
+      allowClear={allowClear}
+      selectedOption={selectedOption}
+      isFiltering={isFiltering}
+      inputValue={inputValue}
+      onInputChange={onInputChange}
+      onSelectionClear={handleSelectionClear}
+      onToggleClick={handleToggleClick}
+      onInputValueChange={handleInputValueChange}
+      toggleProps={toggleProps}
+    />
   );
 
   return (
     <Select
       isOpen={isOpen}
-      selected={selected}
-      onSelect={handleSelect}
-      onOpenChange={(open) => !open && closeMenu()}
+      onSelect={(_, selectedValue) => {
+        handleSelect(selectedValue);
+      }}
+      onOpenChange={(open) => {
+        if (!open) {
+          setIsOpen(false);
+        }
+      }}
       toggle={toggle}
       shouldFocusFirstItemOnOpen={false}
-      ref={innerRef}
-      {...props}
+      {...selectProps}
     >
-      {children ?? (
-        <SelectList>
-          {filteredSelections.map((option, index) => {
-            const { content, value, ...optionProps } = option;
-            return (
-              <SelectOption
-                key={value}
-                value={value}
-                isFocused={focusedItemIndex === index}
-                {...optionProps}
-              >
-                {content}
-              </SelectOption>
-            );
-          })}
-        </SelectList>
-      )}
+      <SelectList id="typeahead-listbox">
+        {displayOptions.map((option) => (
+          <SelectOption key={option.value} value={option.value} {...option.optionProps}>
+            {option.content}
+          </SelectOption>
+        ))}
+      </SelectList>
     </Select>
   );
 };
+
+export default TypeaheadSelect;

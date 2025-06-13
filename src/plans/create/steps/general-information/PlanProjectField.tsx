@@ -4,7 +4,7 @@ import { Controller, type FieldPath, type FieldValues, useWatch } from 'react-ho
 import FormGroupWithErrorText from '@components/common/FormGroupWithErrorText';
 import { HelpIconPopover } from '@components/common/HelpIconPopover/HelpIconPopover';
 import { useProjectNameSelectOptions } from '@components/common/ProjectNameSelect';
-import { TypeaheadSelect } from '@components/common/TypeaheadSelect/TypeaheadSelect';
+import TypeaheadSelect from '@components/common/TypeaheadSelect/TypeaheadSelect';
 import { MenuToggleStatus, Stack, StackItem } from '@patternfly/react-core';
 import { useDefaultProject } from '@utils/hooks/useDefaultProject';
 import { useForkliftTranslation } from '@utils/i18n';
@@ -65,11 +65,12 @@ const PlanProjectField: FC = () => {
           <div ref={field.ref}>
             <TypeaheadSelect
               isScrollable
+              allowClear
               placeholder={t('Select plan project')}
               id={GeneralFormFieldId.PlanProject}
-              selectOptions={projectOptions}
-              selected={field.value}
-              onSelect={(_, value) => {
+              options={projectOptions}
+              value={field.value}
+              onChange={(value) => {
                 field.onChange(value);
 
                 if (sourceProvider) {
@@ -85,9 +86,6 @@ const PlanProjectField: FC = () => {
                 if (targetProject) {
                   setValue(GeneralFormFieldId.TargetProject, '', { shouldValidate: true });
                 }
-              }}
-              onClearSelection={() => {
-                field.onChange('');
               }}
               toggleProps={{
                 status: errors[GeneralFormFieldId.PlanProject] && MenuToggleStatus.danger,

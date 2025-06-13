@@ -4,7 +4,7 @@ import { useNamespaces as useProviderNamespaces } from 'src/modules/Providers/ho
 
 import FormGroupWithErrorText from '@components/common/FormGroupWithErrorText';
 import { HelpIconPopover } from '@components/common/HelpIconPopover/HelpIconPopover';
-import { TypeaheadSelect } from '@components/common/TypeaheadSelect/TypeaheadSelect';
+import TypeaheadSelect from '@components/common/TypeaheadSelect/TypeaheadSelect';
 import { MenuToggleStatus, Stack, StackItem } from '@patternfly/react-core';
 import { useForkliftTranslation } from '@utils/i18n';
 
@@ -57,17 +57,15 @@ const TargetProjectField: FC = () => {
           <div ref={field.ref}>
             <TypeaheadSelect
               isScrollable
+              allowClear
               placeholder={t('Select target project')}
               id={GeneralFormFieldId.TargetProject}
-              selectOptions={targetProviderOptions}
-              selected={field.value}
-              onSelect={(_event, value) => {
+              options={targetProviderOptions}
+              value={field.value}
+              onChange={(value) => {
                 field.onChange(value);
               }}
-              onClearSelection={() => {
-                field.onChange('');
-              }}
-              noOptionsAvailableMessage={
+              noOptionsMessage={
                 targetProvider
                   ? undefined
                   : t('Select a target provider to list available target projects')

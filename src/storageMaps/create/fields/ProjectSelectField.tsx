@@ -10,7 +10,7 @@ import {
 import FormGroupWithErrorText from '@components/common/FormGroupWithErrorText';
 import { HelpIconPopover } from '@components/common/HelpIconPopover/HelpIconPopover';
 import { useProjectNameSelectOptions } from '@components/common/ProjectNameSelect';
-import { TypeaheadSelect } from '@components/common/TypeaheadSelect/TypeaheadSelect';
+import TypeaheadSelect from '@components/common/TypeaheadSelect/TypeaheadSelect';
 import { MenuToggleStatus, Stack, StackItem } from '@patternfly/react-core';
 import { useDefaultProject } from '@utils/hooks/useDefaultProject';
 import { useForkliftTranslation } from '@utils/i18n';
@@ -63,12 +63,13 @@ const ProjectSelectField: FC = () => {
           <div ref={field.ref}>
             <TypeaheadSelect
               isScrollable
+              allowClear
               isDisabled={isSubmitting}
               placeholder={t('Select project')}
               id={CreateStorageMapFieldId.Project}
-              selectOptions={projectOptions}
-              selected={field.value}
-              onSelect={(_, value) => {
+              options={projectOptions}
+              value={field.value}
+              onChange={(value) => {
                 field.onChange(value);
 
                 if (sourceProvider) {
@@ -81,9 +82,6 @@ const ProjectSelectField: FC = () => {
                     shouldValidate: true,
                   });
                 }
-              }}
-              onClearSelection={() => {
-                field.onChange('');
               }}
               toggleProps={{
                 status: errors[CreateStorageMapFieldId.Project] && MenuToggleStatus.danger,
