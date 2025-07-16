@@ -14,6 +14,7 @@ import {
 import { useForkliftTranslation } from '@utils/i18n';
 
 import { useCreatePlanFormContext } from './hooks/useCreatePlanFormContext';
+import { useStepValidation } from './hooks/useStepValidation';
 import { PlanWizardStepId } from './constants';
 import type { CreatePlanFormData } from './types';
 
@@ -32,32 +33,28 @@ const CreatePlanWizardFooter: FC<CreatePlanWizardFooterProps> = ({
   const [activeNamespace] = useActiveNamespace();
   const {
     formState: { isSubmitting },
-    trigger,
   } = useCreatePlanFormContext();
+  const { validateStep } = useStepValidation();
   const { activeStep, goToNextStep, goToPrevStep, goToStepById } = useWizardContext();
   const canSkipToReview =
     activeStep.id === PlanWizardStepId.MigrationType ||
     activeStep.id === PlanWizardStepId.OtherSettings;
 
-  const onStepSubmit = async (event: MouseEvent<HTMLButtonElement>) => {
+  const onNextClick = async (event: MouseEvent<HTMLButtonElement>) => {
     if (onSubmit) {
       return onSubmit(event);
     }
 
-    return trigger(undefined, { shouldFocus: true });
-  };
-
-  const onNextClick = async (event: MouseEvent<HTMLButtonElement>) => {
-    const isValid = await onStepSubmit(event);
-
+    const isValid = await validateStep(activeStep.id as PlanWizardStepId);
     if (isValid) {
       await goToNextStep();
     }
+
+    return undefined;
   };
 
-  const onSkipToReviewClick = async (event: MouseEvent<HTMLButtonElement>) => {
-    const isValid = await onStepSubmit(event);
-
+  const onSkipToReviewClick = async () => {
+    const isValid = await validateStep(activeStep.id as PlanWizardStepId);
     if (isValid) {
       goToStepById(PlanWizardStepId.ReviewAndCreate);
     }
