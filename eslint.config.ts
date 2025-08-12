@@ -297,6 +297,15 @@ export const createEslintConfig = (ideMode = false) =>
         'no-restricted-syntax': 'off',
       },
     },
+    // Telemetry file specific rules
+    {
+      files: ['**/utils/analytics/**/*.ts'],
+      rules: {
+        '@cspell/spellchecker': 'off',
+        'no-console': 'off',
+        'no-underscore-dangle': 'off',
+      },
+    },
     // Testing directory specific rules
     {
       files: ['testing/**/*.{js,ts,jsx,tsx}', '**/__{tests,mocks}__/**/*.{js,ts,jsx,tsx}'],
