@@ -34,61 +34,70 @@ const GroupedSourceStorageField: FC<GroupedSourceStorageFieldProps> = ({
     <Controller
       name={fieldId}
       control={control}
-      render={({ field }) => (
-        <Select
-          ref={field.ref}
-          id={fieldId}
-          isDisabled={isSubmitting}
-          value={(field.value as StorageMappingValue).name}
-          onSelect={async (_event, value) => {
-            field.onChange(value);
-            await trigger(StorageMapFieldId.StorageMap);
-          }}
-          placeholder={t('Select source storage')}
-        >
-          <SelectGroup label={t('Storages used by the selected VMs')}>
-            <SelectList>
-              {isEmpty(usedSourceStorages) ? (
-                <EmptyCategorySelectOption resourceName="storages" />
-              ) : (
-                usedSourceStorages.map((usedStorage) => (
-                  <SelectOption
-                    key={usedStorage.name}
-                    value={usedStorage}
-                    isDisabled={storageMappings?.some(
-                      (mapping: StorageMapping) =>
-                        mapping[StorageMapFieldId.SourceStorage].name === usedStorage.name,
-                    )}
-                  >
-                    {usedStorage.name}
-                  </SelectOption>
-                ))
-              )}
-            </SelectList>
-          </SelectGroup>
+      render={({ field }) => {
+        const currentValue = field.value as StorageMappingValue;
+        const selectedOption = currentValue?.id
+          ? [...usedSourceStorages, ...otherSourceStorages].find(
+              (option) => option.id === currentValue.id,
+            )
+          : undefined;
 
-          <SelectGroup label={t('Other storages present on the source provider')}>
-            <SelectList>
-              {isEmpty(otherSourceStorages) ? (
-                <EmptyCategorySelectOption resourceName="storages" />
-              ) : (
-                otherSourceStorages?.map((otherStorage) => (
-                  <SelectOption
-                    key={otherStorage.name}
-                    value={otherStorage}
-                    isDisabled={storageMappings.some(
-                      (mapping: StorageMapping) =>
-                        mapping[StorageMapFieldId.SourceStorage].name === otherStorage.name,
-                    )}
-                  >
-                    {otherStorage.name}
-                  </SelectOption>
-                ))
-              )}
-            </SelectList>
-          </SelectGroup>
-        </Select>
-      )}
+        return (
+          <Select
+            ref={field.ref}
+            id={fieldId}
+            isDisabled={isSubmitting}
+            value={selectedOption?.name ?? currentValue?.name}
+            onSelect={async (_event, value) => {
+              field.onChange(value);
+              await trigger(StorageMapFieldId.StorageMap);
+            }}
+            placeholder={t('Select source storage')}
+          >
+            <SelectGroup label={t('Storages used by the selected VMs')}>
+              <SelectList>
+                {isEmpty(usedSourceStorages) ? (
+                  <EmptyCategorySelectOption resourceName="storages" />
+                ) : (
+                  usedSourceStorages.map((usedStorage) => (
+                    <SelectOption
+                      key={usedStorage.name}
+                      value={usedStorage}
+                      isDisabled={storageMappings?.some(
+                        (mapping: StorageMapping) =>
+                          mapping[StorageMapFieldId.SourceStorage].name === usedStorage.name,
+                      )}
+                    >
+                      {usedStorage.name}
+                    </SelectOption>
+                  ))
+                )}
+              </SelectList>
+            </SelectGroup>
+
+            <SelectGroup label={t('Other storages present on the source provider')}>
+              <SelectList>
+                {isEmpty(otherSourceStorages) ? (
+                  <EmptyCategorySelectOption resourceName="storages" />
+                ) : (
+                  otherSourceStorages?.map((otherStorage) => (
+                    <SelectOption
+                      key={otherStorage.name}
+                      value={otherStorage}
+                      isDisabled={storageMappings.some(
+                        (mapping: StorageMapping) =>
+                          mapping[StorageMapFieldId.SourceStorage].name === otherStorage.name,
+                      )}
+                    >
+                      {otherStorage.name}
+                    </SelectOption>
+                  ))
+                )}
+              </SelectList>
+            </SelectGroup>
+          </Select>
+        );
+      }}
     />
   );
 };

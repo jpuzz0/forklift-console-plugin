@@ -30,54 +30,65 @@ const InventorySourceNetworkField: FC<InventorySourceNetworkFieldProps> = ({
   const { t } = useForkliftTranslation();
   const networkMappings = useWatch({ control, name: NetworkMapFieldId.NetworkMap });
 
+  const networkOptions = sourceNetworks.map((network) => {
+    const networkLabel = getMapResourceLabel(network);
+    return {
+      id: network.id,
+      name: networkLabel,
+    };
+  });
+
   return (
     <FormGroupWithErrorText isRequired fieldId={fieldId}>
       <Controller
         name={fieldId}
         control={control}
-        render={({ field }) => (
-          <Select
-            ref={field.ref}
-            id={fieldId}
-            testId="network-map-source-network-select"
-            isDisabled={isSubmitting}
-            value={(field.value as NetworkMappingValue).name}
-            onSelect={async (_event, value) => {
-              field.onChange(value);
-              await trigger(NetworkMapFieldId.NetworkMap);
-            }}
-            placeholder={t('Select source network')}
-          >
-            <SelectList>
-              {isEmpty(sourceNetworks) ? (
-                <SelectOption key="empty" isDisabled>
-                  {t('Select a source provider to list available source networks')}
-                </SelectOption>
-              ) : (
-                sourceNetworks.map((network) => {
-                  const networkLabel = getMapResourceLabel(network);
-                  const networkValue: NetworkMappingValue = {
-                    id: network.id,
-                    name: networkLabel,
-                  };
+        render={({ field }) => {
+          const currentValue = field.value as NetworkMappingValue;
+          const selectedOptionName = currentValue?.name ?? '';
 
-                  return (
+          return (
+            <Select
+              ref={field.ref}
+              id={fieldId}
+              testId="network-map-source-network-select"
+              isDisabled={isSubmitting}
+              value={selectedOptionName}
+              onSelect={async (_event, selectedName) => {
+                const selectedOption = networkOptions.find(
+                  (option) => option.name === selectedName,
+                );
+
+                if (selectedOption) {
+                  field.onChange(selectedOption);
+                  await trigger(NetworkMapFieldId.NetworkMap);
+                }
+              }}
+              placeholder={t('Select source network')}
+            >
+              <SelectList>
+                {isEmpty(sourceNetworks) ? (
+                  <SelectOption key="empty" isDisabled>
+                    {t('Select a source provider to list available source networks')}
+                  </SelectOption>
+                ) : (
+                  networkOptions.map((networkOption) => (
                     <SelectOption
-                      key={network.id}
-                      value={networkValue}
+                      key={networkOption.id}
+                      value={networkOption.name}
                       isDisabled={networkMappings?.some(
                         (mapping: NetworkMapping) =>
-                          mapping[NetworkMapFieldId.SourceNetwork].name === networkLabel,
+                          mapping[NetworkMapFieldId.SourceNetwork].name === networkOption.name,
                       )}
                     >
-                      {networkLabel}
+                      {networkOption.name}
                     </SelectOption>
-                  );
-                })
-              )}
-            </SelectList>
-          </Select>
-        )}
+                  ))
+                )}
+              </SelectList>
+            </Select>
+          );
+        }}
       />
     </FormGroupWithErrorText>
   );

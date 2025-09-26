@@ -30,53 +30,64 @@ const InventorySourceStorageField: FC<InventorySourceStorageFieldProps> = ({
   const { t } = useForkliftTranslation();
   const storageMappings = useWatch({ control, name: StorageMapFieldId.StorageMap });
 
+  const storageOptions = sourceStorages.map((storage) => {
+    const storageLabel = getMapResourceLabel(storage);
+    return {
+      id: storage.id,
+      name: storageLabel,
+    };
+  });
+
   return (
     <FormGroupWithErrorText isRequired fieldId={fieldId}>
       <Controller
         name={fieldId}
         control={control}
-        render={({ field }) => (
-          <Select
-            ref={field.ref}
-            id={fieldId}
-            isDisabled={isSubmitting}
-            value={(field.value as StorageMappingValue).name}
-            onSelect={async (_event, value) => {
-              field.onChange(value);
-              await trigger(StorageMapFieldId.StorageMap);
-            }}
-            placeholder={t('Select source storage')}
-          >
-            <SelectList>
-              {isEmpty(sourceStorages) ? (
-                <SelectOption key="empty" isDisabled>
-                  {t('Select a source provider to list available source storages')}
-                </SelectOption>
-              ) : (
-                sourceStorages.map((storage) => {
-                  const storageLabel = getMapResourceLabel(storage);
-                  const storageValue: StorageMappingValue = {
-                    id: storage.id,
-                    name: storageLabel,
-                  };
+        render={({ field }) => {
+          const currentValue = field.value as StorageMappingValue;
+          const selectedOptionName = currentValue?.name ?? '';
 
-                  return (
+          return (
+            <Select
+              ref={field.ref}
+              id={fieldId}
+              isDisabled={isSubmitting}
+              value={selectedOptionName}
+              onSelect={async (_event, selectedName) => {
+                const selectedOption = storageOptions.find(
+                  (option) => option.name === selectedName,
+                );
+
+                if (selectedOption) {
+                  field.onChange(selectedOption);
+                  await trigger(StorageMapFieldId.StorageMap);
+                }
+              }}
+              placeholder={t('Select source storage')}
+            >
+              <SelectList>
+                {isEmpty(sourceStorages) ? (
+                  <SelectOption key="empty" isDisabled>
+                    {t('Select a source provider to list available source storages')}
+                  </SelectOption>
+                ) : (
+                  storageOptions.map((storageOption) => (
                     <SelectOption
-                      key={storage.id}
-                      value={storageValue}
+                      key={storageOption.id}
+                      value={storageOption.name}
                       isDisabled={storageMappings?.some(
                         (mapping: StorageMapping) =>
-                          mapping[StorageMapFieldId.SourceStorage].name === storageLabel,
+                          mapping[StorageMapFieldId.SourceStorage].name === storageOption.name,
                       )}
                     >
-                      {storageLabel}
+                      {storageOption.name}
                     </SelectOption>
-                  );
-                })
-              )}
-            </SelectList>
-          </Select>
-        )}
+                  ))
+                )}
+              </SelectList>
+            </Select>
+          );
+        }}
       />
     </FormGroupWithErrorText>
   );

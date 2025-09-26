@@ -10,7 +10,7 @@ import {
 } from '../constants';
 
 import type { UpdateMappingsFormData } from './constants';
-import type { CustomV1beta1StorageMapSpecMap } from './types';
+import type { CustomV1beta1StorageMap, CustomV1beta1StorageMapSpecMap } from './types';
 
 /**
  * Transforms form values into the format expected by the k8s StorageMap spec
@@ -19,7 +19,7 @@ export const transformFormValuesToK8sSpec = (
   formValues: UpdateMappingsFormData,
   existingStorageMap: V1beta1StorageMap,
   isOpenshift = false,
-): V1beta1StorageMap | undefined => {
+): CustomV1beta1StorageMap | undefined => {
   if (!existingStorageMap.spec) {
     return undefined;
   }
@@ -88,9 +88,9 @@ export const transformStorageMapToFormValues = (
     (mapping: CustomV1beta1StorageMapSpecMap) => {
       const sourceId = mapping.source?.id ?? '';
       const sourceName = mapping.source?.name ?? '';
-      const displayName = sourceId
-        ? (storageMap.status?.references?.find((ref) => ref.id === sourceId)?.name ?? sourceName)
-        : sourceName;
+
+      const storageMapRef = storageMap.status?.references?.find((ref) => ref.id === sourceId);
+      const displayName = sourceId ? (storageMapRef?.name ?? sourceName) : sourceName;
 
       return {
         offloadPlugin: mapping.offloadPlugin ? OffloadPlugin.VSphereXcopyConfig : '',
